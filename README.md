@@ -2,6 +2,8 @@
 
 > Atomberg's internal quarterly goal-setting and performance tracking portal.
 
+**Live:** [lakshayatomberg.vercel.app](https://lakshayatomberg.vercel.app)
+
 ![Lakshya](public/atomberg-logo.png)
 
 ---
