@@ -7,32 +7,32 @@ interface ScoreBadgeProps {
 }
 
 export function ScoreBadge({ score, size = 'md', showLabel = false }: ScoreBadgeProps) {
-  const colorClass =
-    score >= 80
-      ? 'bg-green-50 text-green-700 border-green-200'
-      : score >= 50
-      ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-      : 'bg-red-50 text-red-700 border-red-200';
+  const color =
+    score >= 80 ? '#10B981' :
+    score >= 50 ? '#FDB813' :
+    '#EF4444';
+
+  const bg =
+    score >= 80 ? 'rgba(16,185,129,0.1)' :
+    score >= 50 ? 'rgba(253,184,19,0.1)' :
+    'rgba(239,68,68,0.1)';
 
   const sizeClass = {
     sm: 'text-xs px-2 py-0.5',
-    md: 'text-sm px-3 py-1',
-    lg: 'text-base px-4 py-1.5',
+    md: 'text-sm px-2.5 py-1',
+    lg: 'text-base px-3.5 py-1.5',
   }[size];
+
+  const label = score >= 80 ? 'On Track' : score >= 50 ? 'At Risk' : 'Behind';
 
   return (
     <span
-      className={cn(
-        'inline-flex items-center gap-1 rounded-full border font-mono font-semibold',
-        colorClass,
-        sizeClass
-      )}
+      className={cn('inline-flex items-center gap-1 rounded-full font-mono font-semibold border', sizeClass)}
+      style={{ color, background: bg, borderColor: color + '33' }}
     >
       {score.toFixed(1)}%
       {showLabel && (
-        <span className="font-sans font-normal text-xs ml-1">
-          {score >= 80 ? 'On Track' : score >= 50 ? 'At Risk' : 'Behind'}
-        </span>
+        <span className="font-sans font-medium text-xs ml-0.5">{label}</span>
       )}
     </span>
   );

@@ -1,48 +1,48 @@
 import { useState } from 'react';
-import { Topbar } from '@/components/layout/Topbar';
+import { motion } from 'framer-motion';
 import { MOCK_ORG_COMPLETION } from '@/lib/mockData';
 import { exportToCSV } from '@/lib/export';
 import { getInitials } from '@/lib/utils';
-import { Download, CheckCircle2, XCircle, Clock, Circle } from 'lucide-react';
+import { Download } from 'lucide-react';
 
-type CellStatus = 'done' | 'partial' | 'not_started' | 'overdue';
+type CellStatus = 'done' | 'pending' | 'not_started';
 
-interface CellProps {
-  status: CellStatus;
-  onClick?: () => void;
-}
-
-function RAGCell({ status, onClick }: CellProps) {
-  const config = {
-    done: { icon: <CheckCircle2 size={16} className="text-green-600" />, bg: 'bg-green-50 hover:bg-green-100' },
-    partial: { icon: <Clock size={16} className="text-yellow-500" />, bg: 'bg-yellow-50 hover:bg-yellow-100' },
-    overdue: { icon: <XCircle size={16} className="text-red-500" />, bg: 'bg-red-50 hover:bg-red-100' },
-    not_started: { icon: <Circle size={16} className="text-gray-300" />, bg: 'hover:bg-gray-50' },
-  };
-  const { icon, bg } = config[status];
-
+function StatusCell({ val }: { val: boolean }) {
+  if (val) {
+    return (
+      <td className="px-3 py-3 text-center">
+        <span style={{ color: '#10B981', fontSize: '15px' }}>✓</span>
+      </td>
+    );
+  }
   return (
-    <td
-      onClick={onClick}
-      className={`px-3 py-2.5 text-center ${bg} ${onClick ? 'cursor-pointer' : ''} transition-colors`}
-    >
-      <div className="flex justify-center">{icon}</div>
+    <td className="px-3 py-3 text-center">
+      <span style={{ color: '#9CA3AF', fontSize: '14px' }}>—</span>
     </td>
   );
 }
 
-function getStatus(done: boolean, started: boolean = true): CellStatus {
-  if (done) return 'done';
-  if (!started) return 'not_started';
-  return 'partial';
+function PendingCell({ goalSet }: { goalSet: boolean }) {
+  if (!goalSet) {
+    return (
+      <td className="px-3 py-3 text-center">
+        <span style={{ color: '#9CA3AF', fontSize: '14px' }}>—</span>
+      </td>
+    );
+  }
+  return (
+    <td className="px-3 py-3 text-center">
+      <span style={{ color: '#FDB813', fontSize: '14px' }}>⏳</span>
+    </td>
+  );
 }
 
 export function CompletionGridPage() {
   const [deptFilter, setDeptFilter] = useState('All Departments');
   const [mgrFilter, setMgrFilter] = useState('All Managers');
 
-  const departments = ['All Departments', ...new Set(MOCK_ORG_COMPLETION.map((e) => e.dept))];
-  const managers = ['All Managers', ...new Set(MOCK_ORG_COMPLETION.map((e) => e.manager))];
+  const departments = ['All Departments', ...Array.from(new Set(MOCK_ORG_COMPLETION.map((e) => e.dept)))];
+  const managers = ['All Managers', ...Array.from(new Set(MOCK_ORG_COMPLETION.map((e) => e.manager)))];
 
   const filtered = MOCK_ORG_COMPLETION.filter((e) => {
     if (deptFilter !== 'All Departments' && e.dept !== deptFilter) return false;
@@ -55,137 +55,179 @@ export function CompletionGridPage() {
       Employee: e.name,
       Department: e.dept,
       Manager: e.manager,
-      'Goal Set': e.goalSet ? '✓' : '✗',
-      Approved: e.approved ? '✓' : '✗',
-      'Q1 Emp': e.q1Emp ? '✓' : '✗',
-      'Q1 Mgr': e.q1Mgr ? '✓' : '✗',
-      'Q2 Emp': e.q2Emp ? '✓' : '✗',
-      'Q2 Mgr': e.q2Mgr ? '✓' : '✗',
-      'Q3 Emp': e.q3Emp ? '✓' : '✗',
-      'Q3 Mgr': e.q3Mgr ? '✓' : '✗',
-      'Q4 Emp': e.q4Emp ? '✓' : '✗',
-      'Q4 Mgr': e.q4Mgr ? '✓' : '✗',
+      'Goal Set': e.goalSet ? '✓' : '—',
+      Approved: e.approved ? '✓' : '—',
+      'Q1 Emp': e.q1Emp ? '✓' : '—',
+      'Q1 Mgr': e.q1Mgr ? '✓' : '—',
+      'Q2 Emp': e.q2Emp ? '✓' : '—',
+      'Q2 Mgr': e.q2Mgr ? '✓' : '—',
+      'Q3 Emp': e.q3Emp ? '✓' : '—',
+      'Q3 Mgr': e.q3Mgr ? '✓' : '—',
+      'Q4 Emp': e.q4Emp ? '✓' : '—',
+      'Q4 Mgr': e.q4Mgr ? '✓' : '—',
     }));
     exportToCSV(data, 'lakshya-completion-grid');
   };
 
+  const selectStyle = {
+    background: '#FFFFFF',
+    border: '1px solid #E5E7EB',
+    color: '#6B7280',
+    borderRadius: '8px',
+    padding: '8px 12px',
+    fontSize: '13px',
+    outline: 'none',
+  };
+
   return (
-    <>
-      <Topbar breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Completion Grid' }]} />
-      <div className="p-6 max-w-full mx-auto space-y-5">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 font-heading">Completion Dashboard</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
-              Real-time RAG status of goal and check-in completion across the organisation.
-            </p>
-          </div>
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
-          >
-            <Download size={15} />
-            Export CSV
-          </button>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      style={{ background: '#FFFFFF', minHeight: '100vh' }}
+      className="p-6 max-w-full mx-auto space-y-5"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-heading" style={{ color: '#111827' }}>
+            Completion Dashboard
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: '#6B7280' }}>
+            Real-time RAG status of goal and check-in completion across the organisation.
+          </p>
         </div>
-
-        {/* Filters */}
-        <div className="flex gap-3 flex-wrap">
-          <select
-            value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white text-gray-700"
-          >
-            {departments.map((d) => <option key={d}>{d}</option>)}
-          </select>
-          <select
-            value={mgrFilter}
-            onChange={(e) => setMgrFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white text-gray-700"
-          >
-            {managers.map((m) => <option key={m}>{m}</option>)}
-          </select>
-        </div>
-
-        {/* Grid */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-auto">
-          <table className="w-full text-sm min-w-[900px]">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 min-w-[200px]">
-                  Employee
-                </th>
-                <th className="text-center px-3 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Goal Set
-                </th>
-                <th className="text-center px-3 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Approved
-                </th>
-                <th className="text-center px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-gray-500" colSpan={2}>
-                  Q1
-                </th>
-                <th className="text-center px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-gray-500" colSpan={2}>
-                  Q2
-                </th>
-                <th className="text-center px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-gray-500" colSpan={2}>
-                  Q3
-                </th>
-                <th className="text-center px-3 py-3 text-[10px] font-semibold uppercase tracking-wide text-gray-500" colSpan={2}>
-                  Q4
-                </th>
-              </tr>
-              <tr className="border-b border-gray-100 bg-gray-50/50">
-                <td className="px-4 py-1.5" />
-                <td className="text-center text-[10px] text-gray-400 py-1.5"></td>
-                <td className="text-center text-[10px] text-gray-400 py-1.5"></td>
-                {(['Q1', 'Q2', 'Q3', 'Q4'] as const).flatMap((q) => [
-                  <td key={`${q}-emp`} className="text-center text-[10px] text-gray-400 px-2 py-1.5">Emp</td>,
-                  <td key={`${q}-mgr`} className="text-center text-[10px] text-gray-400 px-2 py-1.5">Mgr</td>,
-                ])}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.map((emp) => (
-                <tr key={emp.id} className="hover:bg-yellow-50/20 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-[#FDB813] flex items-center justify-center text-xs font-bold text-gray-900 shrink-0">
-                        {getInitials(emp.name)}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{emp.name}</p>
-                        <p className="text-xs text-gray-400">{emp.dept}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <RAGCell status={getStatus(emp.goalSet)} />
-                  <RAGCell status={emp.approved ? 'done' : emp.goalSet ? 'partial' : 'not_started'} />
-                  <RAGCell status={emp.q1Emp ? 'done' : emp.approved ? 'overdue' : 'not_started'} />
-                  <RAGCell status={emp.q1Mgr ? 'done' : emp.q1Emp ? 'partial' : 'not_started'} />
-                  <RAGCell status={emp.q2Emp ? 'done' : emp.q1Mgr ? 'partial' : 'not_started'} />
-                  <RAGCell status={emp.q2Mgr ? 'done' : emp.q2Emp ? 'partial' : 'not_started'} />
-                  <RAGCell status={emp.q3Emp ? 'done' : 'not_started'} />
-                  <RAGCell status={emp.q3Mgr ? 'done' : 'not_started'} />
-                  <RAGCell status={emp.q4Emp ? 'done' : 'not_started'} />
-                  <RAGCell status={emp.q4Mgr ? 'done' : 'not_started'} />
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
-            <p className="text-xs text-gray-400">Showing {filtered.length} of {MOCK_ORG_COMPLETION.length} employees</p>
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <span className="font-semibold uppercase tracking-wide text-gray-400 mr-1">Status Legend:</span>
-              <span className="flex items-center gap-1"><CheckCircle2 size={12} className="text-green-600" /> Completed / Approved</span>
-              <span className="flex items-center gap-1"><Clock size={12} className="text-yellow-500" /> Pending Action</span>
-              <span className="flex items-center gap-1"><XCircle size={12} className="text-red-500" /> Overdue / Rejected</span>
-              <span className="flex items-center gap-1"><Circle size={12} className="text-gray-300" /> Not Started</span>
-            </div>
-          </div>
-        </div>
+        <button
+          onClick={handleExport}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors hover:opacity-90"
+          style={{ background: '#FDB813', color: '#000000' }}
+        >
+          <Download size={15} />
+          Export CSV
+        </button>
       </div>
-    </>
+
+      {/* Filters */}
+      <div className="flex gap-3 flex-wrap">
+        <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} style={selectStyle}>
+          {departments.map((d) => <option key={d} style={{ background: '#FFFFFF' }}>{d}</option>)}
+        </select>
+        <select value={mgrFilter} onChange={(e) => setMgrFilter(e.target.value)} style={selectStyle}>
+          {managers.map((m) => <option key={m} style={{ background: '#FFFFFF' }}>{m}</option>)}
+        </select>
+      </div>
+
+      {/* Grid */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="rounded-xl overflow-auto"
+        style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}
+      >
+        <table className="w-full text-sm min-w-[900px]">
+          <thead>
+            <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+              <th
+                className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide"
+                style={{ color: '#9CA3AF', minWidth: '200px' }}
+              >
+                Employee
+              </th>
+              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#9CA3AF' }}>
+                Dept
+              </th>
+              <th className="text-center px-3 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#9CA3AF' }}>
+                Goal Set
+              </th>
+              <th className="text-center px-3 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#9CA3AF' }}>
+                Approved
+              </th>
+              {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map((q) => (
+                <th
+                  key={q}
+                  colSpan={2}
+                  className="text-center px-3 py-3 text-xs font-semibold uppercase tracking-wide"
+                  style={{ color: '#9CA3AF', borderLeft: '1px solid #E5E7EB' }}
+                >
+                  {q}
+                </th>
+              ))}
+            </tr>
+            <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+              <td colSpan={4} />
+              {(['Q1', 'Q2', 'Q3', 'Q4'] as const).flatMap((q) => [
+                <td
+                  key={`${q}-emp`}
+                  className="text-center text-[10px] px-2 py-1.5"
+                  style={{ color: '#9CA3AF', borderLeft: '1px solid #E5E7EB' }}
+                >
+                  Emp
+                </td>,
+                <td key={`${q}-mgr`} className="text-center text-[10px] px-2 py-1.5" style={{ color: '#9CA3AF' }}>
+                  Mgr
+                </td>,
+              ])}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((emp, idx) => (
+              <motion.tr
+                key={emp.id}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.04, duration: 0.2 }}
+                className="transition-colors"
+                style={{ borderBottom: '1px solid #E5E7EB' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#FFFBEC')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{ background: '#FDB813', color: '#000000' }}
+                    >
+                      {getInitials(emp.name)}
+                    </div>
+                    <div>
+                      <p className="font-medium" style={{ color: '#111827' }}>{emp.name}</p>
+                      <p className="text-xs" style={{ color: '#9CA3AF' }}>{emp.manager}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-sm" style={{ color: '#6B7280' }}>{emp.dept}</td>
+                <StatusCell val={emp.goalSet} />
+                {emp.approved ? <StatusCell val={true} /> : <PendingCell goalSet={emp.goalSet} />}
+                <StatusCell val={emp.q1Emp} />
+                <StatusCell val={emp.q1Mgr} />
+                <StatusCell val={emp.q2Emp} />
+                <StatusCell val={emp.q2Mgr} />
+                <StatusCell val={emp.q3Emp} />
+                <StatusCell val={emp.q3Mgr} />
+                <StatusCell val={emp.q4Emp} />
+                <StatusCell val={emp.q4Mgr} />
+              </motion.tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Footer */}
+        <div
+          className="px-4 py-3 flex items-center justify-between"
+          style={{ borderTop: '1px solid #E5E7EB', background: '#F9FAFB' }}
+        >
+          <p className="text-xs" style={{ color: '#9CA3AF' }}>
+            Showing {filtered.length} of {MOCK_ORG_COMPLETION.length} employees
+          </p>
+          <div className="flex items-center gap-4 text-xs" style={{ color: '#6B7280' }}>
+            <span className="font-semibold uppercase tracking-wide mr-1" style={{ color: '#9CA3AF' }}>Legend:</span>
+            <span style={{ color: '#10B981' }}>✓ Completed</span>
+            <span style={{ color: '#FDB813' }}>⏳ Pending</span>
+            <span style={{ color: '#9CA3AF' }}>— Not Started</span>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }

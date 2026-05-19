@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Topbar } from '@/components/layout/Topbar';
 import {
   MOCK_GOAL_SHEETS,
   MOCK_GOALS,
@@ -16,6 +15,7 @@ import { validateGoal, validateGoalSheet } from '@/lib/validations';
 import { toast } from 'sonner';
 import { Plus, Send, Lock, AlertTriangle } from 'lucide-react';
 import { formatDate, cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 export function MyGoalsPage() {
   const { user } = useAuth();
@@ -109,48 +109,79 @@ export function MyGoalsPage() {
   };
 
   return (
-    <>
-      <Topbar breadcrumbs={[{ label: 'My Goals' }]} />
-      <div className="p-6 max-w-4xl mx-auto space-y-5">
-        {/* Header */}
-        <div className="flex items-start justify-between">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      style={{ backgroundColor: '#FFFFFF', minHeight: '100vh' }}
+      className="p-6 max-w-4xl mx-auto space-y-5"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-heading" style={{ color: '#111827' }}>
+            My Goals
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: '#6B7280' }}>
+            Define and track your performance objectives for the upcoming cycle.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <StatusBadge status={sheetStatus} />
+          {isLocked && (
+            <span className="flex items-center gap-1 text-xs" style={{ color: '#9CA3AF' }}>
+              <Lock size={12} /> Locked
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Weightage bar */}
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          borderRadius: '12px',
+          padding: '16px',
+        }}
+      >
+        <WeightageBar total={totalWeightage} />
+      </div>
+
+      {/* Return reason banner */}
+      {sheetStatus === 'returned' && sheet?.return_reason && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2 }}
+          className="flex items-start gap-3 p-4 rounded-xl"
+          style={{
+            backgroundColor: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.2)',
+          }}
+        >
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" style={{ color: '#EF4444' }} />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 font-heading">My Goals</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
-              Define and track your performance objectives for the upcoming cycle.
+            <p className="text-sm font-semibold" style={{ color: '#F87171' }}>
+              Returned for Rework
+            </p>
+            <p className="text-sm mt-0.5" style={{ color: '#FCA5A5' }}>
+              {sheet.return_reason}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <StatusBadge status={sheetStatus} />
-            {isLocked && (
-              <span className="flex items-center gap-1 text-xs text-gray-500">
-                <Lock size={12} /> Locked
-              </span>
-            )}
-          </div>
-        </div>
+        </motion.div>
+      )}
 
-        {/* Weightage bar */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-          <WeightageBar total={totalWeightage} />
-        </div>
-
-        {/* Return reason banner */}
-        {sheetStatus === 'returned' && sheet?.return_reason && (
-          <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
-            <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-red-700">Returned for Rework</p>
-              <p className="text-sm text-red-600 mt-0.5">{sheet.return_reason}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Goal list */}
-        <div className="space-y-3">
-          {goals.map((goal) => (
+      {/* Goal list */}
+      <div className="space-y-3">
+        {goals.map((goal, index) => (
+          <motion.div
+            key={goal.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05, duration: 0.2 }}
+          >
             <GoalCard
-              key={goal.id}
               goal={goal}
               thrustArea={MOCK_THRUST_AREAS.find((t) => t.id === goal.thrust_area_id)}
               isLocked={isLocked}
@@ -159,104 +190,142 @@ export function MyGoalsPage() {
               onEdit={canEdit && !isLocked ? () => setEditingGoal(goal) : undefined}
               onDelete={canEdit && !isLocked ? () => handleDeleteGoal(goal.id) : undefined}
             />
-          ))}
+          </motion.div>
+        ))}
 
-          {/* Add goal placeholder */}
-          {canEdit && !isLocked && goals.length < 8 && !showForm && !editingGoal && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-[#FDB813] hover:text-[#FDB813] hover:bg-yellow-50 transition-all text-sm font-medium"
-            >
-              <Plus size={18} />
-              Add New Performance Goal
-            </button>
-          )}
-
-          {goals.length === 0 && !showForm && (
-            <div className="text-center py-10 text-gray-400">
-              <p className="text-sm">No goals yet. Click "Add New Performance Goal" to start.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Add / Edit form inline */}
-        {showForm && !editingGoal && (
-          <GoalForm
-            thrustAreas={MOCK_THRUST_AREAS}
-            existingTotal={totalWeightage}
-            onSave={handleAddGoal}
-            onCancel={() => setShowForm(false)}
-          />
-        )}
-        {editingGoal && (
-          <GoalForm
-            thrustAreas={MOCK_THRUST_AREAS}
-            existingTotal={totalWeightage - editingGoal.weightage}
-            defaultValues={{
-              title: editingGoal.title,
-              description: editingGoal.description ?? '',
-              thrust_area_id: editingGoal.thrust_area_id,
-              uom_type: editingGoal.uom_type,
-              target_value: editingGoal.target_value,
-              target_date: editingGoal.target_date,
-              weightage: editingGoal.weightage,
+        {/* Add goal placeholder */}
+        {canEdit && !isLocked && goals.length < 8 && !showForm && !editingGoal && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: goals.length * 0.05 + 0.1 }}
+            onClick={() => setShowForm(true)}
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-xl text-sm font-medium transition-all"
+            style={{
+              border: '2px dashed #2A2A2A',
+              color: '#9CA3AF',
             }}
-            onSave={handleEditGoal}
-            onCancel={() => setEditingGoal(null)}
-            isEditing
-          />
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#FDB813';
+              (e.currentTarget as HTMLButtonElement).style.color = '#FDB813';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#2A2A2A';
+              (e.currentTarget as HTMLButtonElement).style.color = '#52525B';
+            }}
+          >
+            <Plus size={18} />
+            Add New Performance Goal
+          </motion.button>
         )}
 
-        {/* Submit button */}
-        {canEdit && !isLocked && goals.length > 0 && (
-          <div className="flex items-center justify-between pt-2">
-            <p className={cn('text-sm', totalWeightage === 100 ? 'text-green-600' : 'text-yellow-700')}>
-              {totalWeightage === 100
-                ? '✓ Ready to submit — weightage is exactly 100%'
-                : `${goals.length} goal${goals.length !== 1 ? 's' : ''} · ${totalWeightage}% weightage allocated`}
-            </p>
-            <button
-              onClick={handleSubmit}
-              disabled={totalWeightage !== 100}
-              className="flex items-center gap-2 bg-[#FDB813] text-gray-900 font-semibold px-6 py-2.5 rounded-lg hover:bg-yellow-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm"
-            >
-              <Send size={15} />
-              Submit for Approval
-            </button>
+        {goals.length === 0 && !showForm && (
+          <div className="text-center py-10" style={{ color: '#9CA3AF' }}>
+            <p className="text-sm">No goals yet. Click "Add New Performance Goal" to start.</p>
           </div>
         )}
-
-        {/* Lock footer */}
-        {isLocked && approvedBy && sheet?.approved_at && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-500">
-            <Lock size={12} />
-            Approved &amp; locked by {approvedBy.full_name} on {formatDate(sheet.approved_at)}
-          </div>
-        )}
-
-        {/* Info boxes */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-          {[
-            {
-              title: 'Cycle Timeline',
-              body: `Goal setting open till 30 Jun 2026. Please ensure all KRAs are approved by your manager before this date.`,
-            },
-            {
-              title: 'Weightage Rule',
-              body: 'Each individual goal must be between 10% and 40%. Cumulative weightage across all goals must equal 100%.',
-            },
-            {
-              title: 'Need Help?',
-              body: 'Contact IT Support or view the Goal Setting Guidelines PDF for best practices.',
-            },
-          ].map((box) => (
-            <div key={box.title} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p className="text-xs font-semibold text-gray-600">{box.title}</p>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">{box.body}</p>
-            </div>
-          ))}
-        </div>
       </div>
-    </>
+
+      {/* Add / Edit form inline */}
+      {showForm && !editingGoal && (
+        <GoalForm
+          thrustAreas={MOCK_THRUST_AREAS}
+          existingTotal={totalWeightage}
+          onSave={handleAddGoal}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
+      {editingGoal && (
+        <GoalForm
+          thrustAreas={MOCK_THRUST_AREAS}
+          existingTotal={totalWeightage - editingGoal.weightage}
+          defaultValues={{
+            title: editingGoal.title,
+            description: editingGoal.description ?? '',
+            thrust_area_id: editingGoal.thrust_area_id,
+            uom_type: editingGoal.uom_type,
+            target_value: editingGoal.target_value,
+            target_date: editingGoal.target_date,
+            weightage: editingGoal.weightage,
+          }}
+          onSave={handleEditGoal}
+          onCancel={() => setEditingGoal(null)}
+          isEditing
+        />
+      )}
+
+      {/* Submit button */}
+      {canEdit && !isLocked && goals.length > 0 && (
+        <div className="flex items-center justify-between pt-2">
+          <p
+            className="text-sm"
+            style={{ color: totalWeightage === 100 ? '#10B981' : '#FDB813' }}
+          >
+            {totalWeightage === 100
+              ? '✓ Ready to submit — weightage is exactly 100%'
+              : `${goals.length} goal${goals.length !== 1 ? 's' : ''} · ${totalWeightage}% weightage allocated`}
+          </p>
+          <button
+            onClick={handleSubmit}
+            disabled={totalWeightage !== 100}
+            className="flex items-center gap-2 font-semibold px-6 py-2.5 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+            style={{ backgroundColor: '#FDB813', color: '#000000' }}
+          >
+            <Send size={15} />
+            Submit for Approval
+          </button>
+        </div>
+      )}
+
+      {/* Lock footer */}
+      {isLocked && approvedBy && sheet?.approved_at && (
+        <div
+          className="flex items-center gap-2 p-3 rounded-lg text-xs"
+          style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E5E7EB',
+            color: '#9CA3AF',
+          }}
+        >
+          <Lock size={12} />
+          Approved &amp; locked by {approvedBy.full_name} on {formatDate(sheet.approved_at)}
+        </div>
+      )}
+
+      {/* Info boxes */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+        {[
+          {
+            title: 'Cycle Timeline',
+            body: `Goal setting open till 30 Jun 2026. Please ensure all KRAs are approved by your manager before this date.`,
+          },
+          {
+            title: 'Weightage Rule',
+            body: 'Each individual goal must be between 10% and 40%. Cumulative weightage across all goals must equal 100%.',
+          },
+          {
+            title: 'Need Help?',
+            body: 'Contact IT Support or view the Goal Setting Guidelines PDF for best practices.',
+          },
+        ].map((box) => (
+          <div
+            key={box.title}
+            style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              borderRadius: '12px',
+              padding: '16px',
+            }}
+          >
+            <p className="text-xs font-semibold" style={{ color: '#6B7280' }}>
+              {box.title}
+            </p>
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: '#9CA3AF' }}>
+              {box.body}
+            </p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
   );
 }
