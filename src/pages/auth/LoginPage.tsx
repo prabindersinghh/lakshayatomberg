@@ -74,7 +74,7 @@ export function LoginPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <img src="/atomberg-logo.png" alt="Atomberg" className="h-8 object-contain" />
+            <img src="/atomberg-logo.png" alt="Atomberg" className="h-14 object-contain" />
           </motion.div>
 
           <div className="flex-1 flex flex-col justify-center">
